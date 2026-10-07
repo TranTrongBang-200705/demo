@@ -1,69 +1,54 @@
-# Deploy bản demo miễn phí lên Render
+# Đưa bản demo lên Render miễn phí
 
-Gói này chạy ứng dụng PHP 7.4 bằng Docker trên Render và dùng TiDB Cloud Starter làm cơ sở dữ liệu MySQL tương thích. Đây là bản demo; Render miễn phí có thể tạm dừng khi vắng truy cập và khởi động lại khi có người mở trang. Không dùng bản này để nhận thanh toán hoặc lưu thông tin nhạy cảm.
+> **Đây chỉ là bản demo.** Dịch vụ Render miễn phí có thể ngủ khi không có truy cập; lần mở lại có thể mất khoảng một phút. Tệp trên máy chủ Render không bền sau khi khởi động lại. Database được lưu riêng trên TiDB. Không bật thanh toán thật và không lưu dữ liệu nhạy cảm trên bản này.
 
-## Tạo repository riêng tư
+## 1. Tạo database TiDB
 
-Tạo một repository GitHub **Private** mới. Đưa vào repository các tệp sau từ thư mục này:
-
-- `Dockerfile`
-- `apache-site.conf`
-- `start.sh`
-- `app_freehosting_light.zip`
-
-Vì gói ZIP khoảng 71 MB, dùng GitHub Desktop hoặc Git CLI để đẩy repository; trang tải tệp của GitHub trên trình duyệt không nhận tệp lớn như vậy. Chỉ đẩy thư mục `deploy/render`, không đẩy toàn bộ project gốc.
-
-Không đưa `staging_content.sql` lên GitHub nếu muốn giữ kín bộ đề. Tệp SQL có thể dùng để nạp database ở bước sau.
-
-## Tạo database TiDB
-
-1. Đăng ký TiDB Cloud bằng GitHub hoặc email và tạo một cụm **Starter** ở khu vực gần Singapore nếu được cung cấp.
-2. Đặt mức chi tiêu tháng bằng `0` để giữ trong hạn mức miễn phí. Lưu lại host, cổng `4000`, tên database, username có tiền tố cụm và mật khẩu.
-3. Cho phép kết nối public. TiDB yêu cầu TLS; image Docker đã có CA hệ thống.
-4. Tạo một database trống trong TiDB. Trên Windows, mở MySQL CLI của Laragon, kết nối tới TiDB bằng TLS và nhập mật khẩu khi được hỏi:
+1. Đăng nhập TiDB Cloud và tạo cụm **Starter**. Chọn Singapore hoặc khu vực gần nhất nếu được cung cấp.
+2. Tạo một database trống. Ghi lại host, database, username và password; giữ cổng `4000` và yêu cầu TLS.
+3. Kết nối từ máy Windows bằng MySQL CLI của Laragon (thay các giá trị viết hoa bằng thông tin TiDB của bạn):
 
    ```powershell
    & 'D:\laragon\bin\mysql\mysql-8.0.30-winx64\bin\mysql.exe' --connect-timeout 150 -u 'USERNAME' -h 'HOST' -P 4000 -D 'DATABASE' --ssl-mode=VERIFY_IDENTITY --ssl-ca='PATH_TO_CA_CERTIFICATE' -p
    ```
 
-   Tại dấu nhắc `mysql>`, nạp tệp SQL bằng lệnh:
+   Tại dấu nhắc `mysql>`, nạp dữ liệu demo:
 
    ```sql
    source D:/laragon/www/SU/deploy/staging/staging_content.sql;
    ```
 
-   Thay `PATH_TO_CA_CERTIFICATE` bằng đường dẫn CA root của máy. TiDB yêu cầu TLS; hướng dẫn chính thức về vị trí CA có ở [tài liệu TLS của TiDB](https://docs.pingcap.com/tidbcloud/secure-connections-to-serverless-clusters/).
+   Thay `PATH_TO_CA_CERTIFICATE` bằng đường dẫn CA tải từ phần kết nối TiDB. Không gửi thông tin kết nối hoặc mật khẩu vào chat.
 
-## Tạo dịch vụ Render
+## 2. Tạo dịch vụ Render từ Blueprint
 
-1. Đăng ký Render và liên kết GitHub. Chọn **New → Web Service**, kết nối repository riêng tư vừa tạo, chọn **Docker** và gói **Free**.
-2. Tạo khóa Laravel mới bằng `php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"`, rồi đặt kết quả vào biến `APP_KEY`. Không dùng khóa máy local.
-3. Thêm các biến môi trường:
+1. Đăng nhập Render, chọn **New → Blueprint** và kết nối GitHub repository `TranTrongBang-200705/demo`. Cấp quyền truy cập repo nếu GitHub hỏi.
+2. Render sẽ đọc `render.yaml` ở thư mục gốc và tạo web service gói **Free**. Khi được hỏi giá trị bí mật, điền `APP_KEY`, `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` từ bước trên.
+3. Tạo `APP_KEY` riêng cho bản demo trong PowerShell tại máy bạn:
 
-   ```text
-   APP_NAME=Goc hoc tap cua em
-   APP_ENV=production
-   APP_DEBUG=false
-   APP_URL=https://TEN-DICH-VU.onrender.com
-   STAGING_DEMO=true
-   DB_CONNECTION=mysql
-   DB_HOST=HOST_TIDB
-   DB_PORT=4000
-   DB_DATABASE=TEN_DATABASE
-   DB_USERNAME=USERNAME_TIDB
-   DB_PASSWORD=MAT_KHAU_TIDB
-   DB_SSL_CA=/etc/ssl/certs/ca-certificates.crt
-   CACHE_DRIVER=file
-   SESSION_DRIVER=cookie
-   QUEUE_DRIVER=sync
-   MAIL_DRIVER=log
+   ```powershell
+   php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
    ```
 
-4. Để trống toàn bộ biến `SEPAY_*`. Render sẽ build Docker image và cấp HTTPS cho URL dịch vụ.
-5. Mở URL sau khi deploy xong, tạo tài khoản thử và kiểm tra danh sách đề, làm đề, kết quả. Dịch vụ miễn phí có thể ngủ sau 15 phút không hoạt động; lần mở tiếp theo thường cần khoảng một phút để thức dậy.
+   Dán kết quả trực tiếp vào Render. Đừng commit key vào GitHub.
+4. Chờ Render build và deploy. Mở URL `onrender.com` được Render cấp; `APP_URL` tự lấy URL đó.
 
-## Giới hạn cần biết
+## 3. Kiểm tra demo
 
-- Render Free có thể khởi động lại dịch vụ; hệ thống tệp của ứng dụng không bền sau khi restart. Database nằm riêng trên TiDB nên nội dung database vẫn lưu.
-- TiDB Starter miễn phí có hạn mức lưu trữ 5 GiB dữ liệu hàng và 50 triệu Request Units mỗi tháng; khi chạm hạn mức, thao tác database có thể bị giới hạn cho tới kỳ mới.
-- Đây là cấu hình demo. Trước khi mở thanh toán thật cần chuyển sang môi trường có lưu trữ bền, sao lưu, giám sát và cấu hình bảo mật production phù hợp.
+- Mở trang chủ, danh sách đề, bắt đầu một đề và xem kết quả.
+- `STAGING_DEMO=true` giữ thanh toán SePay tắt. Không thêm biến `SEPAY_*`.
+- Nếu trang báo lỗi kết nối database, kiểm tra host, database, username, password, quyền truy cập public và TLS trong TiDB.
+
+## Tệp trong repository
+
+- `render.yaml`: cấu hình Blueprint và các biến môi trường demo.
+- `Dockerfile`, `apache-site.conf`, `start.sh`: chạy Laravel/PHP bằng Apache.
+- `app_freehosting_light.zip`: gói ứng dụng demo khoảng 71 MB.
+
+Tệp SQL chứa kho đề không nằm trong repo để tránh công khai nội dung đề. Gói ZIP cũng có dữ liệu đề, vì vậy hãy giữ repository ở chế độ **Private** nếu chưa muốn chia sẻ kho câu hỏi.
+
+## Giới hạn bản miễn phí
+
+Render Free có thể ngủ khi không có truy cập và không có persistent disk. TiDB Starter có quota miễn phí và giới hạn theo chính sách hiện hành của TiDB. Đây là môi trường thử nghiệm; trước khi nhận thanh toán thật cần chuyển sang cấu hình production có lưu trữ bền, sao lưu, giám sát và bảo mật phù hợp.
+
+Tài liệu: [Render Blueprints](https://render.com/docs/blueprint-spec), [Render free instances](https://render.com/docs/free), [TiDB Cloud TLS](https://docs.pingcap.com/tidbcloud/secure-connections-to-serverless-clusters/).
