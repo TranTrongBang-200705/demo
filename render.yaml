@@ -14,6 +14,8 @@ services:
         value: production
       - key: APP_DEBUG
         value: "false"
+      - key: APP_LOG
+        value: errorlog
       - key: APP_KEY
         sync: false
       - key: APP_URL
