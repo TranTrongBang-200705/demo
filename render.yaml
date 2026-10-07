@@ -42,7 +42,7 @@ services:
       - key: CACHE_DRIVER
         value: file
       - key: SESSION_DRIVER
-        value: cookie
+        value: file
       - key: QUEUE_DRIVER
         value: sync
       - key: MAIL_DRIVER
