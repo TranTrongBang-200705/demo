@@ -22,6 +22,7 @@ RUN find /etc/apt -type f \( -name '*.list' -o -name '*.sources' \) \
 COPY app_freehosting_light.zip /tmp/app.zip
 RUN unzip -q /tmp/app.zip -d /var/www/html \
     && rm /tmp/app.zip \
+    && mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 COPY apache-site.conf /etc/apache2/sites-available/000-default.conf
