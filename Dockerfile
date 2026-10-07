@@ -1,6 +1,9 @@
 FROM php:7.4-apache-bullseye
 
-RUN apt-get update \
+RUN find /etc/apt -type f \( -name '*.list' -o -name '*.sources' \) \
+        -exec sed -i 's|deb.debian.org/debian-security|archive.debian.org/debian-security|g' {} + \
+    && printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99no-check-valid-until \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         libfreetype6-dev \
