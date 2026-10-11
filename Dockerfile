@@ -22,6 +22,7 @@ RUN find /etc/apt -type f \( -name '*.list' -o -name '*.sources' \) \
 COPY app_freehosting_light.zip /tmp/app.zip
 RUN unzip -q /tmp/app.zip -d /var/www/html \
     && rm /tmp/app.zip \
+    && chmod 644 /var/www/html/resources/data/vioedu_grade2_corrections.json \
     && mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
